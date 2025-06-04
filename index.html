@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="UTF-8">
+  <title>UX設計流程體驗(外送APP)</title>
+  <style>
+    body {
+      background-color: #1e1e1e;
+      color: #ffffff;
+      font-family: Arial, sans-serif;
+      padding: 20px;
+    }
+    h1 {
+      text-align: center;
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      gap: 30px;
+      align-items: center;
+    }
+    .flow-line {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .slot, .card {
+      border: 2px dashed #ffc733;
+      border-radius: 10px;
+      padding: 10px 15px;
+      min-width: 160px;
+      text-align: center;
+      background-color: #2e2e2e;
+      transition: background-color 0.2s;
+    }
+    .slot.filled {
+      border-style: solid;
+      background-color: #3e3e3e;
+    }
+    .card {
+      background-color: #444;
+      cursor: grab;
+    }
+    .card:hover {
+      background-color: #555;
+    }
+    .arrow {
+      color: #ccc;
+      font-size: 24px;
+      user-select: none;
+    }
+    .choices {
+      display: grid;
+      grid-template-columns: repeat(2, auto);
+      gap: 10px;
+      justify-content: center;
+    }
+    .btn {
+      background-color: #2fa875;
+      color: white;
+      border: none;
+      border-radius: 50%;
+      padding: 20px;
+      width: 80px;
+      height: 80px;
+      font-size: 14px;
+      cursor: pointer;
+      margin-top: 10px;
+    }
+    .btn:hover {
+      background-color: #268f64;
+    }
+    .correct {
+      background-color: #2e7d32 !important;
+      border-color: #81c784 !important;
+    }
+    .incorrect {
+      background-color: #c62828 !important;
+      border-color: #ef5350 !important;
+    }
+    #successImage {
+      display: none;
+      margin-top: 20px;
+      max-width: 400px;
+      border: 2px solid #ffc733;
+      border-radius: 12px;
+    }
+  </style>
+</head>
+<body>
+  <h1>UX設計流程體驗(外送APP)</h1>
+  <div class="container">
+    <div class="flow-line" id="flow">
+      <div class="slot filled" draggable="false">開啟外送 APP</div>
+      <div class="arrow">→</div>
+      <div class="slot" data-index="0" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
+      <div class="arrow">→</div>
+      <div class="slot" data-index="1" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
+      <div class="arrow">→</div>
+      <div class="slot" data-index="2" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
+      <div class="arrow">→</div>
+      <div class="slot" data-index="3" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
+      <div class="arrow">→</div>
+      <div class="slot" data-index="4" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
+      <div class="arrow">→</div>
+      <div class="slot" data-index="5" ondragover="allowDrop(event)" ondrop="drop(event)"></div>
+      <div class="arrow">→</div>
+      <div class="slot filled" draggable="false">餐點送達，完成訂單</div>
+    </div>
+
+    <button class="btn" onclick="checkAnswer()">Submit</button>
+
+    <div class="choices" id="choices">
+      <!-- 卡片會透過 JS 動態產生 -->
+    </div>
+
+    <img id="successImage" src="appux.png" alt="完成畫面">
+  </div>
+
+  <script>
+    const steps = [
+      "搜尋想吃的餐廳或食物",
+      "點選餐點加入購物車",
+      "查看購物車",
+      "確認地址與時間",
+      "選擇付款方式",
+      "送出訂單"
+    ];
+
+    const flowSlots = Array.from(document.querySelectorAll(".slot[data-index]"));
+    const choiceContainer = document.getElementById("choices");
+    const successImage = document.getElementById("successImage");
+
+    const shuffledSteps = steps
+      .map(step => ({ step, sort: Math.random() }))
+      .sort((a, b) => a.sort - b.sort)
+      .map(({ step }) => step);
+
+    shuffledSteps.forEach(step => {
+      const card = document.createElement("div");
+      card.className = "card";
+      card.textContent = step;
+      card.dataset.step = step;
+      card.draggable = true;
+      card.ondragstart = drag;
+      card.addEventListener("click", () => placeCard(card));
+      choiceContainer.appendChild(card);
+    });
+
+    function drag(ev) {
+      ev.dataTransfer.setData("text", ev.target.textContent);
+    }
+
+    function allowDrop(ev) {
+      ev.preventDefault();
+    }
+
+    function drop(ev) {
+      ev.preventDefault();
+      const data = ev.dataTransfer.getData("text");
+      const slot = ev.target.closest(".slot[data-index]");
+      if (slot && !slot.textContent) {
+        slot.textContent = data;
+        slot.classList.add("filled");
+
+        const draggedCard = Array.from(document.querySelectorAll(".card")).find(card => card.textContent === data);
+        if (draggedCard) draggedCard.remove();
+      }
+    }
+
+    function placeCard(card) {
+      const availableSlot = flowSlots.find(s => !s.textContent);
+      if (availableSlot) {
+        availableSlot.textContent = card.textContent;
+        availableSlot.classList.add("filled");
+        card.remove();
+      }
+    }
+
+    document.addEventListener("click", e => {
+      const slot = e.target.closest(".slot[data-index]");
+      if (slot && slot.textContent) {
+        const restored = document.createElement("div");
+        restored.className = "card";
+        restored.textContent = slot.textContent;
+        restored.dataset.step = slot.textContent;
+        restored.draggable = true;
+        restored.ondragstart = drag;
+        restored.addEventListener("click", () => placeCard(restored));
+        choiceContainer.appendChild(restored);
+        slot.textContent = "";
+        slot.classList.remove("filled", "correct", "incorrect");
+        successImage.style.display = "none";
+      }
+    });
+
+    function checkAnswer() {
+      let allCorrect = true;
+      flowSlots.forEach((slot, index) => {
+        slot.classList.remove("correct", "incorrect");
+        if (slot.textContent === steps[index]) {
+          slot.classList.add("correct");
+        } else {
+          slot.classList.add("incorrect");
+          allCorrect = false;
+        }
+      });
+
+      if (allCorrect) {
+        successImage.style.display = "block";
+      }
+    }
+  </script>
+</body>
+</html>
